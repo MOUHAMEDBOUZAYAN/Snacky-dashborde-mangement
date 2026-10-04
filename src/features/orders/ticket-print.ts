@@ -50,7 +50,6 @@ function itemOptionsHtml(item: OrderItem): string {
 function buildTicketHtml(order: Order, logoDataUrl: string | null): string {
   const { time, date } = formatTicketDateTime(order.createdAt);
   const customerName = order.customer?.fullName?.trim() || "زائر";
-  const customerPhone = order.customer?.phone?.trim() || "—";
   const place =
     order.type === "DELIVERY"
       ? order.deliveryAddress?.trim() || "—"
@@ -288,7 +287,6 @@ function buildTicketHtml(order: Order, logoDataUrl: string | null): string {
 
     <div class="block">
       <div class="row"><span class="label">الاسم</span><span class="value">${escapeHtml(customerName)}</span></div>
-      <div class="row"><span class="label">الهاتف</span><span class="value">${escapeHtml(customerPhone)}</span></div>
       <div class="row"><span class="label">نقطة الاستلام</span><span class="value">${escapeHtml(place)}</span></div>
       <div class="row"><span class="label">وقت الاستلام</span><span class="value">${escapeHtml(pickupTime)}</span></div>
     </div>
