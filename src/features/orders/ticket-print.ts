@@ -1,16 +1,6 @@
-import { shortId } from "@/lib/format";
 import { loadSnackyLogoDataUrl } from "@/lib/pdf/brand";
 
-import type { Order, OrderItem, OrderStatus } from "./types";
-
-const TICKET_STATUS_AR: Record<OrderStatus, string> = {
-  PENDING: "قيد الانتظار",
-  PREPARING: "قيد التحضير",
-  READY: "جاهز للتسليم",
-  OUT_FOR_DELIVERY: "قيد التوصيل",
-  COMPLETED: "مكتملة",
-  CANCELLED: "ملغاة",
-};
+import type { Order, OrderItem } from "./types";
 
 function escapeHtml(value: string): string {
   return value
@@ -59,8 +49,7 @@ function itemOptionsHtml(item: OrderItem): string {
 
 function buildTicketHtml(order: Order, logoDataUrl: string | null): string {
   const { time, date } = formatTicketDateTime(order.createdAt);
-  const customerName =
-    order.customer?.fullName?.trim() || "زائر";
+  const customerName = order.customer?.fullName?.trim() || "زائر";
   const customerPhone = order.customer?.phone?.trim() || "—";
   const place =
     order.type === "DELIVERY"
@@ -71,6 +60,10 @@ function buildTicketHtml(order: Order, logoDataUrl: string | null): string {
   const pickupTime = order.scheduledFor
     ? formatTicketTime(order.scheduledFor)
     : "—";
+  const orderNumber = String(order.orderNumber);
+  const totalAmount = escapeHtml(
+    formatTicketPrice(order.total).replace(" د", ""),
+  );
 
   const rows = order.items
     .map((item) => {
@@ -89,114 +82,133 @@ function buildTicketHtml(order: Order, logoDataUrl: string | null): string {
 
   const logoBlock = logoDataUrl
     ? `<img class="logo" src="${logoDataUrl}" alt="Snacky" />`
-    : `<div class="logo-fallback">Snacky</div>`;
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8" />
-  <title>Ticket ${escapeHtml(shortId(order.id, 10))}</title>
+  <title>Ticket #${escapeHtml(orderNumber)}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     @page {
       size: 80mm auto;
       margin: 0;
     }
     * { box-sizing: border-box; }
-    html, body {
+    html {
       margin: 0;
       padding: 0;
-      width: 80mm;
       background: #fff;
+    }
+    body {
+      width: 72mm; /* 80mm ناقص الهوامش */
+      margin: 0 auto;
+      padding: 5px;
+      direction: rtl;
+      font-family: "Cairo", Tahoma, "Segoe UI", Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.45;
       color: #000;
-      font-family: "Courier New", Courier, "Segoe UI", Tahoma, Arial, sans-serif;
-      font-size: 11px;
-      line-height: 1.35;
+      background: #fff;
+      word-wrap: break-word;
+      white-space: normal;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
-    body { padding: 3mm 3mm 4mm; }
-    .ticket { width: 100%; }
+    .ticket {
+      width: 100%;
+      overflow: hidden;
+    }
     .center { text-align: center; }
     .logo {
       display: block;
       width: 28mm;
       height: auto;
-      margin: 0 auto 1.5mm;
-      filter: grayscale(1) contrast(1.2);
-    }
-    .logo-fallback {
-      font-size: 18px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-      margin-bottom: 1mm;
+      margin: 0 auto 2mm;
+      filter: grayscale(1) contrast(1.25);
     }
     .brand {
-      font-size: 16px;
-      font-weight: 800;
+      font-size: 24px;
+      font-weight: 900;
       margin: 0;
+      letter-spacing: 0.3px;
     }
     .tagline {
-      font-size: 9px;
-      margin: 0.8mm 0 0;
+      font-size: 11px;
+      font-weight: 700;
+      margin: 1.5mm 0 0;
     }
     .uni {
-      font-size: 8px;
-      margin: 1mm 0 2mm;
+      font-size: 10px;
+      font-weight: 600;
+      margin: 1.2mm 0 2mm;
     }
     .rule {
       border: none;
-      border-top: 1px dashed #000;
-      margin: 2mm 0;
+      border-top: 1.5px dashed #000;
+      margin: 2.5mm 0;
     }
     .rule-solid {
       border: none;
-      border-top: 1.5px solid #000;
-      margin: 2mm 0;
+      border-top: 2px solid #000;
+      margin: 2.5mm 0;
     }
-    .order-no {
+    .order-label {
       font-size: 13px;
-      font-weight: 800;
+      font-weight: 700;
       margin: 0;
     }
-    .meta {
-      font-size: 10px;
+    .order-no {
+      font-size: 30px;
+      font-weight: 900;
       margin: 1mm 0 0;
+      letter-spacing: 0.5px;
     }
-    .status {
-      display: inline-block;
-      margin-top: 1.5mm;
-      padding: 0.8mm 2.5mm;
-      border: 1.5px solid #000;
-      font-weight: 800;
-      font-size: 10px;
+    .meta {
+      font-size: 12px;
+      font-weight: 700;
+      margin: 1.8mm 0 0;
     }
-    .block { margin: 2mm 0; text-align: right; }
+    .block { margin: 2.5mm 0; text-align: right; font-size: 12px; }
     .row {
       display: flex;
       justify-content: space-between;
       gap: 2mm;
-      margin: 0.6mm 0;
+      margin: 1mm 0;
     }
-    .label { font-weight: 700; white-space: nowrap; }
-    .value { text-align: left; word-break: break-word; }
+    .label { font-weight: 800; white-space: nowrap; }
+    .value {
+      text-align: left;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      font-weight: 700;
+    }
     .section-title {
       font-weight: 800;
-      font-size: 11px;
+      font-size: 13px;
       text-align: center;
-      margin: 1.5mm 0;
+      margin: 2mm 0;
     }
     table {
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
+      word-wrap: break-word;
     }
     th, td {
-      padding: 1mm 0.5mm;
+      padding: 1.5mm 0.5mm;
       vertical-align: top;
-      font-size: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      word-wrap: break-word;
+      overflow-wrap: anywhere;
     }
     th {
-      border-bottom: 1px solid #000;
+      border-bottom: 2px solid #000;
       font-weight: 800;
       text-align: right;
     }
@@ -209,38 +221,48 @@ function buildTicketHtml(order: Order, logoDataUrl: string | null): string {
       text-align: left;
       width: 18mm;
     }
-    .item-name { font-weight: 700; }
+    .item-name { font-weight: 800; font-size: 12px; }
     .opts {
-      font-size: 8.5px;
-      margin-top: 0.4mm;
-      opacity: 0.95;
+      font-size: 10px;
+      font-weight: 600;
+      margin-top: 0.6mm;
     }
     .total {
-      font-size: 13px;
-      font-weight: 800;
+      font-size: 17px;
+      font-weight: 900;
       text-align: center;
-      margin: 2mm 0 1mm;
+      margin: 2.5mm 0 1.5mm;
     }
     .pay {
       text-align: center;
-      font-size: 10px;
-      margin-bottom: 2mm;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 2.5mm;
     }
     .footer {
       text-align: center;
-      font-size: 9px;
+      font-size: 11px;
+      font-weight: 700;
     }
-    .footer .thanks { font-weight: 800; margin-bottom: 0.8mm; }
-    .footer .keep { margin-bottom: 0.8mm; }
-    .footer .web { font-weight: 700; }
+    .footer .thanks { font-weight: 800; font-size: 12px; margin-bottom: 1mm; }
+    .footer .keep { font-weight: 600; margin-bottom: 1mm; }
+    .footer .web { font-weight: 800; }
     @media print {
       html, body {
-        width: 80mm;
         margin: 0 !important;
-        padding: 0 !important;
+        background: #fff;
       }
-      body { padding: 2mm 2.5mm 3mm !important; }
-      .ticket { page-break-inside: avoid; break-inside: avoid; }
+      body {
+        width: 72mm !important;
+        margin: 0 auto !important;
+        padding: 5px !important;
+      }
+      .ticket {
+        width: 100%;
+        overflow: hidden;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
     }
   </style>
 </head>
@@ -249,16 +271,16 @@ function buildTicketHtml(order: Order, logoDataUrl: string | null): string {
     <div class="center">
       ${logoBlock}
       <p class="brand">Snacky</p>
-      <p class="tagline">ساندويتشات · بيتزا · برغر · مشروبات</p>
+      <p class="tagline">طاكوس · ساندويتش · باستيشيو · مشروبات</p>
       <p class="uni">جامعة السلطان مولاي سليمان · بني ملال</p>
     </div>
 
     <hr class="rule" />
 
     <div class="center">
-      <p class="order-no">رقم الطلب #${escapeHtml(shortId(order.id, 10))}</p>
+      <p class="order-label">رقم الطلب</p>
+      <p class="order-no">#${escapeHtml(orderNumber)}</p>
       <p class="meta">${escapeHtml(time)} · ${escapeHtml(date)}</p>
-      <div class="status">${escapeHtml(TICKET_STATUS_AR[order.status])}</div>
     </div>
 
     <hr class="rule" />
@@ -288,7 +310,7 @@ function buildTicketHtml(order: Order, logoDataUrl: string | null): string {
 
     <hr class="rule-solid" />
 
-    <p class="total">المجموع ${escapeHtml(formatTicketPrice(order.total).replace(" د", ""))} درهم</p>
+    <p class="total">المجموع ${totalAmount} درهم</p>
     <p class="pay">الدفع عند الاستلام</p>
 
     <hr class="rule" />
@@ -335,14 +357,19 @@ export async function printOrderTicket(order: Order): Promise<void> {
   frameDoc.close();
 
   await new Promise<void>((resolve) => {
-    const done = () => resolve();
-    // Images (logo) need a tick to load before print.
+    const finish = () => resolve();
+    const waitFontsThen = () => {
+      const fonts = frameDoc.fonts;
+      if (fonts?.ready) {
+        void fonts.ready.then(() => window.setTimeout(finish, 80));
+      } else {
+        window.setTimeout(finish, 250);
+      }
+    };
     if (frameDoc.readyState === "complete") {
-      window.setTimeout(done, 150);
+      waitFontsThen();
     } else {
-      iframe.addEventListener("load", () => window.setTimeout(done, 150), {
-        once: true,
-      });
+      iframe.addEventListener("load", waitFontsThen, { once: true });
     }
   });
 

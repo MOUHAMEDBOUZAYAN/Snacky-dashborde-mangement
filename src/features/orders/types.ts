@@ -41,6 +41,8 @@ export interface OrderCustomer {
 
 export interface Order {
   id: string;
+  /** Sequential kitchen/display number from the backend. */
+  orderNumber: number;
   userId: string | null;
   status: OrderStatus;
   type: OrderType;

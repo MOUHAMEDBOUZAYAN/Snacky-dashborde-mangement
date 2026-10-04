@@ -47,6 +47,7 @@ export const orderRatingSchema = z.object({
  */
 export const orderSchema = z.object({
   id: z.string(),
+  orderNumber: z.number().int(),
   userId: z.string().uuid().nullable(),
   status: z.enum(ORDER_STATUSES),
   type: z.enum(ORDER_TYPES),
