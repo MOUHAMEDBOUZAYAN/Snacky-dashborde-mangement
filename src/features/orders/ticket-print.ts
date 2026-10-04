@@ -2,12 +2,64 @@ import { loadSnackyLogoDataUrl } from "@/lib/pdf/brand";
 
 import type { Order, OrderItem } from "./types";
 
+/** French stored delivery place → Arabic label (ticket print only). */
+const DELIVERY_PLACE_AR: Record<string, string> = {
+  "Devant Bab FST (Faculté des Sciences et Techniques)":
+    "أمام باب كلية العلوم والتقنيات (FST)",
+  "Devant Bab FP (Faculté Polydisciplinaire)":
+    "أمام باب الكلية متعددة التخصصات (FP)",
+  "Devant Bab Cité Universitaire principale":
+    "أمام باب الحي الجامعي الرئيسي",
+  "Devant Bab FEG": "أمام باب كلية العلوم القانونية والاقتصادية (FEG)",
+  "Devant Bab ENS": "أمام باب المدرسة العليا للأساتذة (ENS)",
+};
+
+const DELIVERY_PLACE_KEYS = Object.keys(DELIVERY_PLACE_AR).sort(
+  (a, b) => b.length - a.length,
+);
+
 function escapeHtml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
+}
+
+/**
+ * Map a stored French place to Arabic for the ticket.
+ * If the string starts with a known place and has trailing detail, keep the detail.
+ */
+function toTicketPlaceArabic(stored: string): string {
+  const value = stored.trim();
+  if (!value) return value;
+
+  const exact = DELIVERY_PLACE_AR[value];
+  if (exact) return exact;
+
+  for (const fr of DELIVERY_PLACE_KEYS) {
+    if (value === fr) return DELIVERY_PLACE_AR[fr]!;
+    if (value.startsWith(`${fr} `) || value.startsWith(`${fr},`) || value.startsWith(`${fr}·`) || value.startsWith(`${fr} -`) || value.startsWith(`${fr}/`)) {
+      const detail = value.slice(fr.length).replace(/^[\s,·\-/]+/, "").trim();
+      const ar = DELIVERY_PLACE_AR[fr]!;
+      return detail ? `${ar} · ${detail}` : ar;
+    }
+  }
+
+  return value;
+}
+
+function ticketPickupPlace(order: Order): string {
+  if (order.type === "DINE_IN") return "في المكان";
+  if (order.type !== "DELIVERY") return "للاستلام";
+
+  const placeFr = order.deliveryAddress?.trim();
+  if (!placeFr) return "—";
+
+  const placeAr = toTicketPlaceArabic(placeFr);
+  const detail = order.deliveryAddressDetail?.trim();
+  if (detail) return `${placeAr} · ${detail}`;
+  return placeAr;
 }
 
 function formatTicketPrice(amount: number): string {
@@ -50,12 +102,7 @@ function itemOptionsHtml(item: OrderItem): string {
 function buildTicketHtml(order: Order, logoDataUrl: string | null): string {
   const { time, date } = formatTicketDateTime(order.createdAt);
   const customerName = order.customer?.fullName?.trim() || "زائر";
-  const place =
-    order.type === "DELIVERY"
-      ? order.deliveryAddress?.trim() || "—"
-      : order.type === "DINE_IN"
-        ? "في المكان"
-        : "للاستلام";
+  const place = ticketPickupPlace(order);
   const pickupTime = order.scheduledFor
     ? formatTicketTime(order.scheduledFor)
     : "—";
