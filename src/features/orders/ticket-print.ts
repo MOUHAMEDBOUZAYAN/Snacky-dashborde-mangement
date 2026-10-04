@@ -60,7 +60,8 @@ function buildTicketHtml(order: Order, logoDataUrl: string | null): string {
   const pickupTime = order.scheduledFor
     ? formatTicketTime(order.scheduledFor)
     : "—";
-  const orderNumber = String(order.orderNumber);
+  const orderNumber =
+    order.orderNumber != null ? String(order.orderNumber) : "—";
   const totalAmount = escapeHtml(
     formatTicketPrice(order.total).replace(" د", ""),
   );
