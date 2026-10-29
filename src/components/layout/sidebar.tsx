@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import {
   ChevronDown,
   ClipboardList,
+  Droplets,
   LayoutDashboard,
   Star,
   Truck,
@@ -70,6 +71,12 @@ const navItems: NavItem[] = [
         labelKey: "menuItems",
       },
     ],
+  },
+  {
+    type: "link",
+    href: "/dashboard/sauces",
+    labelKey: "sauces",
+    icon: Droplets,
   },
   {
     type: "group",

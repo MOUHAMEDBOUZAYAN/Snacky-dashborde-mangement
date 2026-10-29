@@ -23,6 +23,7 @@ export interface MenuItem {
   price: number;
   imageUrl: string | null;
   isAvailable: boolean;
+  requiresSauce: boolean;
   categoryId: string;
   createdAt?: string;
   updatedAt?: string;
@@ -48,6 +49,7 @@ export interface CreateMenuItemInput {
   price: number;
   imageUrl?: string | null;
   isAvailable: boolean;
+  requiresSauce: boolean;
   categoryId: string;
 }
 

@@ -72,6 +72,7 @@ export function MenuItemFormDialog({
       price: 0,
       imageUrl: "",
       isAvailable: true,
+      requiresSauce: false,
       categoryId: "",
     },
   });
@@ -85,6 +86,7 @@ export function MenuItemFormDialog({
         price: item.price,
         imageUrl: item.imageUrl ?? "",
         isAvailable: item.isAvailable,
+        requiresSauce: item.requiresSauce ?? false,
         categoryId: item.categoryId,
       });
     } else {
@@ -94,6 +96,7 @@ export function MenuItemFormDialog({
         price: "" as unknown as number,
         imageUrl: "",
         isAvailable: true,
+        requiresSauce: false,
         categoryId: categories[0]?.id ?? "",
       });
     }
@@ -253,6 +256,24 @@ export function MenuItemFormDialog({
                   </Label>
                   <Switch
                     id="item-available"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    disabled={pending}
+                  />
+                </div>
+              )}
+            />
+
+            <Controller
+              name="requiresSauce"
+              control={control}
+              render={({ field }) => (
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
+                  <Label htmlFor="item-requires-sauce">
+                    {t("menuItemRequiresSauce", locale)}
+                  </Label>
+                  <Switch
+                    id="item-requires-sauce"
                     checked={field.value}
                     onCheckedChange={field.onChange}
                     disabled={pending}

@@ -49,6 +49,7 @@ export const createMenuItemSchema = z.object({
       "URL d'image invalide",
     ),
   isAvailable: z.boolean(),
+  requiresSauce: z.boolean(),
   categoryId: z.string().min(1, "La catégorie est requise"),
 });
 
@@ -67,6 +68,7 @@ export function toMenuItemPayload(values: CreateMenuItemFormValues) {
     price: values.price,
     imageUrl: imageUrl.length > 0 ? imageUrl : null,
     isAvailable: values.isAvailable,
+    requiresSauce: values.requiresSauce,
     categoryId: values.categoryId,
   };
 }
