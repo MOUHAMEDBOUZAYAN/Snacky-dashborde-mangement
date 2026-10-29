@@ -23,7 +23,8 @@ export interface MenuItem {
   price: number;
   imageUrl: string | null;
   isAvailable: boolean;
-  requiresSauce: boolean;
+  /** When true, customers must pick a sauce for this item. */
+  requiresSauce?: boolean;
   categoryId: string;
   createdAt?: string;
   updatedAt?: string;
